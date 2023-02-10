@@ -1,4 +1,4 @@
-# Midimon
+# Midimon — Midi Monitoring Plugin
 
 ## Building
 
@@ -15,3 +15,7 @@ cargo xtask bundle midimon --release
    - Display all available information
    - Timing, Channel, VoiceID ...
    - Priority is NoteOn and NoteOff.
+
+- [x] Display NoteOn and NoteOff in GUI
+- [ ] Record NoteOn and NoteOff live
+- [ ] Transmit new note events to GUI
