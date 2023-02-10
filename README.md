@@ -19,3 +19,8 @@ cargo xtask bundle midimon --release
 - [x] Display NoteOn and NoteOff in GUI
 - [ ] Record NoteOn and NoteOff live
 - [ ] Transmit new note events to GUI
+
+## Sources
+
+- [NIH-plug](https://github.com/robbert-vdh/nih-plug) — API-agnostic audio plugin framework written in Rust.
+- [Vizia](https://github.com/vizia/vizia) — Declarative GUI framework for the Rust programming language.
