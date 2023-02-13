@@ -4,9 +4,10 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 mod editor;
-// This is a shortened version of the gain example with most comments removed, check out
-// https://github.com/robbert-vdh/nih-plug/blob/master/plugins/examples/gain/src/lib.rs to get
-// started
+
+// This project was started with the cookiecutter template for NIH-plug
+// Source:
+// https://github.com/robbert-vdh/nih-plug-template
 
 struct Midimon {
     params: Arc<MidimonParams>,

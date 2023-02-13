@@ -27,7 +27,7 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 pub(crate) fn create(
     params: Arc<MidimonParams>,
     editor_state: Arc<ViziaState>,
-    midi_events: Vec<(SystemTime, NoteEvent<()>)>,
+    _midi_events: Vec<(SystemTime, NoteEvent<()>)>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
         assets::register_noto_sans_light(cx);
