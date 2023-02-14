@@ -1,17 +1,21 @@
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
-use rtrb::{PopError, PushError, RingBuffer};
-use std::sync::Arc;
+use rtrb::{Consumer, Producer, RingBuffer};
+use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
+
 mod editor;
 
+const MIDI_BUFFER_SIZE: usize = 1024;
+pub(crate) type TimeNotePair = (SystemTime, NoteEvent<()>);
 // This project was started with the cookiecutter template for NIH-plug
 // Source:
 // https://github.com/robbert-vdh/nih-plug-template
 
 struct Midimon {
     params: Arc<MidimonParams>,
-    midi_buffer: RingBuffer<NoteEvent<()>>,
+    midi_producer: Producer<TimeNotePair>,
+    midi_consumer: Arc<Mutex<Consumer<TimeNotePair>>>,
 }
 
 #[derive(Params)]
@@ -28,9 +32,11 @@ struct MidimonParams {
 
 impl Default for Midimon {
     fn default() -> Self {
+        let (producer, consumer) = RingBuffer::<TimeNotePair>::new(MIDI_BUFFER_SIZE);
         Self {
             params: Arc::new(MidimonParams::default()),
-            midi_events: Arc::new(Vec::new()),
+            midi_producer: producer,
+            midi_consumer: Arc::new(Mutex::new(consumer)),
         }
     }
 }
@@ -79,9 +85,12 @@ impl Plugin for Midimon {
     /// Build the Editor window
     fn editor(&self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         editor::create(
-            self.params.clone(),
+            editor::EditorData {
+                params: self.params.clone(),
+                midi_history: Vec::new(),
+                midi_consumer: self.midi_consumer.clone(),
+            },
             self.params.editor_state.clone(),
-            self.midi_events.to_vec(),
         )
     }
 
