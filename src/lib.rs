@@ -1,8 +1,8 @@
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
+use rtrb::{PopError, PushError, RingBuffer};
 use std::sync::Arc;
 use std::time::SystemTime;
-
 mod editor;
 
 // This project was started with the cookiecutter template for NIH-plug
@@ -11,7 +11,7 @@ mod editor;
 
 struct Midimon {
     params: Arc<MidimonParams>,
-    midi_events: Arc<Vec<(SystemTime, NoteEvent<()>)>>,
+    midi_buffer: RingBuffer<NoteEvent<()>>,
 }
 
 #[derive(Params)]
