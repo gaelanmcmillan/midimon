@@ -27,11 +27,11 @@ pub(crate) struct EditorData {
 impl Model for EditorData {}
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::from_size(400, 400)
+    ViziaState::from_size(500, 500)
 }
 
 pub(crate) fn create(
-    mut editor_data: EditorData,
+    editor_data: EditorData,
     editor_state: Arc<ViziaState>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _| {
