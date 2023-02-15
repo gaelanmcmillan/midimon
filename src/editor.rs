@@ -1,6 +1,8 @@
 use crate::MidimonParams;
+use crate::TimeNotePair;
 use chrono::offset::Local;
 use chrono::DateTime;
+use nih_plug::log::{log, Level};
 use nih_plug::prelude::{Editor, NoteEvent};
 use nih_plug_vizia::vizia::prelude::*;
 use nih_plug_vizia::vizia::prelude::{FamilyOwned, Model};
@@ -9,8 +11,6 @@ use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
 use rtrb::Consumer;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime};
-
-use crate::TimeNotePair;
 
 // In the editor, we want our MIDI list to update on possibly every process block, reflecting the MIDI we've monitored so far.
 
@@ -35,11 +35,25 @@ pub(crate) fn create(
         assets::register_noto_sans_light(cx);
         assets::register_noto_sans_thin(cx);
 
-        editor_data.clone().build(cx);
+        let mut buf = editor_data.midi_consumer.lock().unwrap();
+        let mut notes: Vec<TimeNotePair> = vec![];
+
+        while let Ok(time_note_pair) = buf.pop() {
+            log!(Level::Info, "Popped note from UI thread");
+            notes.push(time_note_pair);
+        }
+
+        EditorData {
+            params: editor_data.params.clone(),
+            midi_history: notes,
+            midi_consumer: editor_data.midi_consumer.clone(),
+        }
+        .build(cx);
         ResizeHandle::new(cx);
 
         // Layout is defined below
         VStack::new(cx, |cx| {
+            log!(Level::Info, "Drawing a VStack");
             Label::new(cx, "Midimon 0.2")
                 .font_family(vec![FamilyOwned::Name(String::from(
                     assets::NOTO_SANS_THIN,
@@ -48,6 +62,7 @@ pub(crate) fn create(
                 .height(Pixels(50.0));
 
             List::new(cx, EditorData::midi_history, move |cx, _index, entry| {
+                log!(Level::Info, "Drawing a list item");
                 let (time, message) = entry.get(cx);
                 let formatted_time = DateTime::<Local>::from(time).format("%r");
 
