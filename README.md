@@ -19,6 +19,7 @@ cargo xtask bundle midimon --release
 - [x] Display NoteOn and NoteOff in GUI
 - [x] Record NoteOn and NoteOff live
 - [x] Transmit new note events to GUI
+- [x] Scroll through a log of old notes
 - [ ] Update GUI regularly...
 
 ## Sources
