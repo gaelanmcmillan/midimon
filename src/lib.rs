@@ -1,17 +1,21 @@
+use nih_plug::log::{log, Level};
 use nih_plug::prelude::*;
 use nih_plug_vizia::ViziaState;
-use std::sync::Arc;
+use rtrb::{Consumer, Producer, PushError, RingBuffer};
+use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
-
 mod editor;
 
+const MIDI_BUFFER_SIZE: usize = 1024;
+pub(crate) type TimeNotePair = (SystemTime, NoteEvent<()>);
 // This project was started with the cookiecutter template for NIH-plug
 // Source:
 // https://github.com/robbert-vdh/nih-plug-template
 
 struct Midimon {
     params: Arc<MidimonParams>,
-    midi_events: Arc<Vec<(SystemTime, NoteEvent<()>)>>,
+    midi_producer: Producer<TimeNotePair>,
+    midi_consumer: Arc<Mutex<Consumer<TimeNotePair>>>,
 }
 
 #[derive(Params)]
@@ -28,9 +32,12 @@ struct MidimonParams {
 
 impl Default for Midimon {
     fn default() -> Self {
+        log!(Level::Error, "Hello from Midimon::default()");
+        let (producer, consumer) = RingBuffer::<TimeNotePair>::new(MIDI_BUFFER_SIZE);
         Self {
             params: Arc::new(MidimonParams::default()),
-            midi_events: Arc::new(Vec::new()),
+            midi_producer: producer,
+            midi_consumer: Arc::new(Mutex::new(consumer)),
         }
     }
 }
@@ -58,7 +65,7 @@ impl Plugin for Midimon {
     const DEFAULT_AUX_INPUTS: Option<AuxiliaryIOConfig> = None;
     const DEFAULT_AUX_OUTPUTS: Option<AuxiliaryIOConfig> = None;
 
-    const MIDI_INPUT: MidiConfig = MidiConfig::None;
+    const MIDI_INPUT: MidiConfig = MidiConfig::Basic;
     const MIDI_OUTPUT: MidiConfig = MidiConfig::None;
 
     const SAMPLE_ACCURATE_AUTOMATION: bool = true;
@@ -78,10 +85,14 @@ impl Plugin for Midimon {
 
     /// Build the Editor window
     fn editor(&self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
+        log!(Level::Error, "Hello from Midimon::editor()");
         editor::create(
-            self.params.clone(),
+            editor::EditorData {
+                params: self.params.clone(),
+                midi_history: Vec::new(),
+                midi_consumer: self.midi_consumer.clone(),
+            },
             self.params.editor_state.clone(),
-            self.midi_events.to_vec(),
         )
     }
 
@@ -96,6 +107,7 @@ impl Plugin for Midimon {
         _buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
+        log!(Level::Error, "Hello from Midimon::initialize()");
         // Resize buffers and perform other potentially expensive initialization operations here.
         // The `reset()` function is always called right after this function. You can remove this
         // function if you do not need it.
@@ -114,10 +126,19 @@ impl Plugin for Midimon {
         context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         while let Some(event) = context.next_event() {
-            match event {
-                NoteEvent::NoteOn { .. } => (),
-                NoteEvent::NoteOff { .. } => (),
-                _ => (),
+            if let Err(e) = match event {
+                // TODO: Estimate actual timestamp of note based on its `timing` value.
+                NoteEvent::NoteOn { .. } => {
+                    log!(Level::Error, "Pushing a note on");
+                    self.midi_producer.push((SystemTime::now(), event))
+                }
+                NoteEvent::NoteOff { .. } => {
+                    log!(Level::Error, "Pushing a note off");
+                    self.midi_producer.push((SystemTime::now(), event))
+                }
+                _ => Result::<_, _>::Ok(()),
+            } {
+                eprintln!("Error when pushing: {e}");
             }
         }
         ProcessStatus::Normal
@@ -144,5 +165,5 @@ impl Vst3Plugin for Midimon {
         &[Vst3SubCategory::Fx, Vst3SubCategory::Dynamics];
 }
 
-nih_export_clap!(Midimon);
+// nih_export_clap!(Midimon);
 nih_export_vst3!(Midimon);
