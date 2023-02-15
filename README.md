@@ -17,8 +17,9 @@ cargo xtask bundle midimon --release
    - Priority is NoteOn and NoteOff.
 
 - [x] Display NoteOn and NoteOff in GUI
-- [ ] Record NoteOn and NoteOff live
-- [ ] Transmit new note events to GUI
+- [x] Record NoteOn and NoteOff live
+- [x] Transmit new note events to GUI
+- [ ] Update GUI regularly...
 
 ## Sources
 
